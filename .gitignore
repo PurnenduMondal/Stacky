@@ -50,6 +50,7 @@ crashlytics-build.properties
 *.mdb
 *.opendb
 *.VC.db
+*.keystore
 
 # Rider
 .idea/
