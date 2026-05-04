@@ -1,7 +1,6 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
-using UnityEditor.Rendering.LookDev;
 
 public class StackManager : MonoBehaviour
 {
@@ -28,6 +27,7 @@ public class StackManager : MonoBehaviour
     private float inputDelay = 0.3f;
     private float inputTimer = 0f;
     private bool inputReady = false;
+    private GradientBackground gradientBg;
 
     void Awake()
     {
@@ -49,7 +49,17 @@ public class StackManager : MonoBehaviour
 
         if (scoreText != null) scoreText.text = "0";
 
+        // Find base block
         lastBlock = GameObject.Find("BaseBlock");
+        if (lastBlock == null)
+            Debug.LogError("BaseBlock not found in scene! Make sure it exists and is named exactly 'BaseBlock'");
+
+        // Find gradient safely
+        if (Camera.main != null)
+            gradientBg = Camera.main.GetComponent<GradientBackground>();
+        else
+            Debug.LogError("Camera.main is null! Make sure Main Camera tag is set to 'MainCamera'");
+
         SpawnNextBlock();
     }
 
@@ -102,6 +112,11 @@ public class StackManager : MonoBehaviour
 
     void SpawnNextBlock()
     {
+        if (lastBlock == null)
+        {
+            Debug.LogError("lastBlock is null in SpawnNextBlock!");
+            return;
+        }
         float lastY = lastBlock.transform.position.y;
         float lastH = lastBlock.transform.localScale.y;
         float spawnY = lastY + lastH / 2f + blockHeight / 2f;
@@ -121,6 +136,9 @@ public class StackManager : MonoBehaviour
         BlockController bc = currentBlock.AddComponent<BlockController>();
         bc.speed = moveSpeed;
         bc.moveOnX = moveOnX; // tell the block which axis to use
+
+        if (gradientBg != null)
+            gradientBg.UpdateGradient(lastBlock.transform.position.y);
     }
 
     void PlaceBlock()
@@ -242,18 +260,33 @@ public class StackManager : MonoBehaviour
 
         chunk.transform.localScale = new Vector3(chunkWidth, blockHeight, chunkDepth);
 
+        // Copy colour from current block so chunk matches
+        Renderer currentRenderer = currentBlock.GetComponent<Renderer>();
+        Renderer chunkRenderer = chunk.GetComponent<Renderer>();
+        if (currentRenderer != null && chunkRenderer != null)
+        {
+            chunkRenderer.material = new Material(currentRenderer.material);
+        }
+
         Rigidbody rb = chunk.AddComponent<Rigidbody>();
         rb.AddForce(Vector3.down * 2f, ForceMode.Impulse);
 
-        // Random spin for visual flair
         rb.AddTorque(new Vector3(
-            Random.Range(-2f, 2f),
-            Random.Range(-2f, 2f),
-            Random.Range(-2f, 2f)
+            UnityEngine.Random.Range(-2f, 2f),
+            UnityEngine.Random.Range(-2f, 2f),
+            UnityEngine.Random.Range(-2f, 2f)
         ), ForceMode.Impulse);
 
         Destroy(chunk, 2f);
     }
+
+    public float GetTowerHeight()
+    {
+        if (lastBlock != null)
+            return lastBlock.transform.position.y;
+        return 0f;
+    }
+
     void GameOver()
     {
         Debug.Log("GAME OVER");

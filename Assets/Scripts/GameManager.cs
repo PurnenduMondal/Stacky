@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using TMPro;
+using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
@@ -58,6 +59,32 @@ public class GameManager : MonoBehaviour
     public void ShowGameOver(int score)
     {
         gameStarted = false;
+
+        // Zoom out before showing game over panel
+        if (Camera.main != null && StackManager.Instance != null)
+        {
+            CameraFollow cam = Camera.main.GetComponent<CameraFollow>();
+            if (cam != null)
+            {
+                float towerHeight = StackManager.Instance.GetTowerHeight();
+                cam.ZoomOutToShowTower(towerHeight);
+            }
+            else
+            {
+                Debug.LogWarning("CameraFollow script not found on Main Camera!");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Camera.main or StackManager.Instance is null!");
+        }
+
+        StartCoroutine(ShowGameOverDelayed(score));
+    }
+
+    IEnumerator ShowGameOverDelayed(int score)
+    {
+        yield return new WaitForSeconds(1.5f);
         gameOverPanel.SetActive(true);
 
         finalScoreText.text = score.ToString();
@@ -73,8 +100,6 @@ public class GameManager : MonoBehaviour
         {
             bestScoreText.text = "BEST: " + best;
         }
-
-        
     }
 
     public void GrantRevive()
@@ -91,7 +116,7 @@ public class GameManager : MonoBehaviour
 
     public void OnTryAgainPressed()
     {
-        // Restart the scene
+        // No need to reset camera — scene reload handles everything
         UnityEngine.SceneManagement.SceneManager.LoadScene(
             UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
         );
